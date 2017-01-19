@@ -1,6 +1,8 @@
 from Queue import Queue
 from math import log
 
+from result_params import RunResults
+
 import random
 import argparse
 import logging
@@ -15,33 +17,39 @@ def generate_packet(arrival_tick):
 
 
 # Handles arrival of a new packet
-def arrival(packet_queue, arrival_tick, queue_empty_tick, server_idle_time):
+def arrival(packet_queue, cur_tick, run_results, sim_params):
 
     if packet_queue.qsize() == 0:
-        server_idle_time += (arrival_tick - queue_empty_tick)
+        run_results.server_idle_time += (cur_tick - run_results.queue_empty_tick)
 
-    new_packet = generate_packet(arrival_tick)
+    new_packet = generate_packet(cur_tick)
     packet_queue.put(new_packet)
+
+    if packet_queue.qsize() == 0:
+        run_results.dep_tick = cur_tick + calc_next_departure_time(sim_params)
 
     logger.debug("Packet arrived.")
     # Also need to consider packet loss case when queue is full
 
 
 # Handles departure of the latest packet in the buffer
-def departure(packet_queue, queue_size, num_looks, queue_delay, dep_tick):
+def departure(packet_queue, cur_tick, run_results, sim_params):
     # Calculate the packet queue size
-    queue_size += packet_queue.qsize()
-    num_looks += 1
+    run_results.queue_size += packet_queue.qsize()
+    run_results.num_looks += 1
 
     # Calculate queue delay
     packet = packet_queue.get()
-    queue_delay += dep_tick - packet['arrival_tick']
+    run_results.queue_delay += cur_tick - (packet['arrival_tick'])
 
     logger.debug("Packet departed.")
 
-    # Record tick if queue is empty
+    # Record tick if queue is empty and set the next departure time to be Inf (total ticks + 1)
     if packet_queue.qsize() == 0:
-        return dep_tick
+        run_results.queue_empty_tick = cur_tick
+        run_results.dep_tick = sim_params.ticks + 1
+    else:
+        run_results.dep_tick = cur_tick + calc_next_departure_time(sim_params)
 
 
 # Time taken to process a packet
@@ -64,10 +72,10 @@ def create_report():
 
 
 # Relevant variables for report generation
-def save_run_variables(average_queue_size, average_queue_delay, total_idle_time, queue_size, queue_delay, num_looks, server_idle_time):
-    average_queue_size.append(queue_size/num_looks)
-    average_queue_delay.append(queue_delay/num_looks)
-    total_idle_time.append(server_idle_time)
+def save_run_variables(average_queue_size, average_queue_delay, prop_idle_time, run_results, sim_params):
+    average_queue_size.append(run_results.queue_size/run_results.num_looks)
+    average_queue_delay.append(run_results.queue_delay/run_results.num_looks)
+    prop_idle_time.append(run_results.server_idle_time/sim_params.ticks)
 
 
 def main(sim_params):
@@ -75,7 +83,7 @@ def main(sim_params):
 
     average_queue_size = []
     average_queue_delay = []
-    total_idle_time = []
+    prop_idle_time = []
 
     for i in range(sim_params.num_runs):
         logger.info("Run " + str(i+1) + "/" + str(sim_params.num_runs) + ": ")
@@ -92,25 +100,19 @@ def main(sim_params):
         logger.info("First departure tick = " + str(dep_tick))
 
         # Initialize simulation results to zero for computing average
-        queue_size = 0
-        num_looks = 0
-        queue_delay = 0
-        server_idle_time = 0
-        queue_empty_tick = 0
+        run_results = RunResults()
+        run_results.dep_tick = sim_params.ticks + 1
 
         for cur_tick in range(sim_params.ticks):
-            if cur_tick >= arrival_tick:
-                arrival(packet_queue, arrival_tick, queue_empty_tick, server_idle_time)
+            if cur_tick == arrival_tick:
+                arrival(packet_queue, cur_tick, run_results, sim_params)
 
                 arrival_tick = cur_tick + calc_next_arrival_time(sim_params)
-                dep_tick = cur_tick + calc_next_departure_time(sim_params)
 
-            if cur_tick >= dep_tick:
-                queue_empty_tick = departure(packet_queue, queue_size, num_looks, queue_delay, dep_tick)
-                dep_tick = sim_params.ticks + 1
+            if cur_tick == run_results.dep_tick:
+                departure(packet_queue, cur_tick, run_results, sim_params)
 
-        save_run_variables(average_queue_size, average_queue_delay, total_idle_time, queue_size,
-                           queue_delay, num_looks, server_idle_time)
+        save_run_variables(average_queue_size, average_queue_delay, prop_idle_time, run_results, sim_params)
 
     create_report()
 
