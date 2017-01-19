@@ -43,8 +43,8 @@ def calc_next_departure_time(sim_params):
     return sim_params.packet_size / sim_params.transmission_rate
 
 def calc_next_arrival_time(sim_params):
-    u=random.uniform(0,1)  # generate random number between 0...1
-    arrival_time= (-1.0/sim_params.l) * log((1-u)) * sim_params.tick_length
+    u=random.uniform(0, 1)  # generate random number between 0...1
+    arrival_time = (-1.0/sim_params.l) * log((1-u)) * sim_params.tick_length
 
     logger.debug("Next arrival time = " + str(arrival_time))
     return arrival_time
@@ -53,11 +53,17 @@ def calc_next_arrival_time(sim_params):
 def create_report():
     pass
 
-def save_run_variables():
-    pass
+def save_run_variables(average_queue_size, average_queue_delay, total_idle_time, queue_size, queue_delay, num_looks, server_idle_time):
+    average_queue_size.append(queue_size/num_looks)
+    average_queue_delay.append(queue_delay/num_looks)
+    total_idle_time.append(server_idle_time)
 
 def main(sim_params):
     logger.debug(sim_params)
+
+    average_queue_size = []
+    average_queue_delay = []
+    total_idle_time = []
 
     for i in range(sim_params.num_runs):
         logger.info("Run " + str(i+1) + "/" + str(sim_params.num_runs) + ": ")
@@ -91,7 +97,8 @@ def main(sim_params):
                 queue_empty_tick = departure(packet_queue, queue_size, num_looks, queue_delay, dep_tick)
                 dep_tick = sim_params.ticks + 1
 
-        save_run_variables()
+        save_run_variables(average_queue_size, average_queue_delay, total_idle_time, queue_size,
+                           queue_delay, num_looks, server_idle_time)
 
 
     create_report()
