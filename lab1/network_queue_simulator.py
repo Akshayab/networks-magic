@@ -1,4 +1,3 @@
-
 from Queue import Queue
 from math import log
 
@@ -7,12 +6,15 @@ import argparse
 import logging
 import sys
 
+
 def generate_packet(arrival_tick):
     packet = {}
     packet['arrival_tick'] = arrival_tick
 
     return packet
 
+
+# Handles arrival of a new packet
 def arrival(packet_queue, arrival_tick, queue_empty_tick, server_idle_time):
 
     if packet_queue.qsize() == 0:
@@ -24,6 +26,8 @@ def arrival(packet_queue, arrival_tick, queue_empty_tick, server_idle_time):
     logger.debug("Packet arrived.")
     # Also need to consider packet loss case when queue is full
 
+
+# Handles departure of the latest packet in the buffer
 def departure(packet_queue, queue_size, num_looks, queue_delay, dep_tick):
     # Calculate the packet queue size
     queue_size += packet_queue.qsize()
@@ -39,24 +43,32 @@ def departure(packet_queue, queue_size, num_looks, queue_delay, dep_tick):
     if packet_queue.qsize() == 0:
         return dep_tick
 
+
+# Time taken to process a packet
 def calc_next_departure_time(sim_params):
     return sim_params.packet_size / sim_params.transmission_rate
 
+
+# Random generator used to calculate the tick when the next packet will be generated
 def calc_next_arrival_time(sim_params):
-    u=random.uniform(0, 1)  # generate random number between 0...1
+    u = random.uniform(0, 1)  # generate random number between 0...1
     arrival_time = (-1.0/sim_params.l) * log((1-u)) * sim_params.tick_length
 
     logger.debug("Next arrival time = " + str(arrival_time))
     return arrival_time
 
+
 # TODO: Generate report
 def create_report():
     pass
 
+
+# Relevant variables for report generation
 def save_run_variables(average_queue_size, average_queue_delay, total_idle_time, queue_size, queue_delay, num_looks, server_idle_time):
     average_queue_size.append(queue_size/num_looks)
     average_queue_delay.append(queue_delay/num_looks)
     total_idle_time.append(server_idle_time)
+
 
 def main(sim_params):
     logger.debug(sim_params)
@@ -99,7 +111,6 @@ def main(sim_params):
 
         save_run_variables(average_queue_size, average_queue_delay, total_idle_time, queue_size,
                            queue_delay, num_looks, server_idle_time)
-
 
     create_report()
 
