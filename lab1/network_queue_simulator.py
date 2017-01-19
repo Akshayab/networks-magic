@@ -2,6 +2,12 @@ from Queue import Queue
 from math import log
 
 from result_params import RunResults
+from matplotlib import pyplot as plt
+
+# You need to sudo install pyplot
+import plotly.plotly as py
+import plotly.graph_objs as go
+
 
 import random
 import argparse
@@ -68,7 +74,40 @@ def calc_next_arrival_time(sim_params):
 
 # TODO: Generate report
 def create_report():
-    pass
+    print "Reached here"
+    # ASHWIN: Example for 5 x values and 5 y values. Replace x and y with relevant information
+
+    # Matplotlib
+    x = [1, 2, 3, 4, 5]
+    y = [1, 1, 2, 4, 5]
+
+    plt.plot(x, y)
+    plt.xlabel('X_LABEL')
+    plt.ylabel('Y_LABEL')
+
+    plt.show()
+
+    # Pyplot
+    # Their documentation has changed - i will need to change this.
+    # Create a trace
+    # trace = go.Scatter(
+    #     x=x,
+    #     y=y
+    # )
+    #
+    # data = [trace]
+    # layout = go.Layout(
+    #     xaxis=dict(
+    #         title='X_LABEL'
+    #     ),
+    #     yaxis=dict(
+    #         title='Y_LABEL'
+    #     )
+    # )
+    #
+    # fig = go.Figure(data=data, layout=layout)
+    #
+    # py.plot(fig, filename='some-plot')
 
 
 # Relevant variables for report generation
@@ -77,6 +116,7 @@ def save_run_variables(average_queue_size, average_queue_delay, prop_idle_time, 
     average_queue_delay.append(run_results.queue_delay/run_results.num_looks)
     prop_idle_time.append(run_results.server_idle_time/sim_params.ticks)
 
+create_report()
 
 def main(sim_params):
     logger.debug(sim_params)
