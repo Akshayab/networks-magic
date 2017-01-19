@@ -7,22 +7,37 @@ import argparse
 import logging
 import sys
 
-def generate_packet():
-    packet = "Hello"
+def generate_packet(arrival_tick):
+    packet = {}
+    packet['arrival_tick'] = arrival_tick
 
     return packet
 
-def arrival(packet_queue):
-    # TODO: Determine data structure to represent a packet
-    new_packet = generate_packet()
+def arrival(packet_queue, arrival_tick, queue_empty_tick, server_idle_time):
+
+    if packet_queue.qsize() == 0:
+        server_idle_time += (arrival_tick - queue_empty_tick)
+
+    new_packet = generate_packet(arrival_tick)
     packet_queue.put(new_packet)
 
     logger.debug("Packet arrived.")
     # Also need to consider packet loss case when queue is full
 
-def departure(packet_queue):
-    packet_queue.get()
+def departure(packet_queue, queue_size, num_looks, queue_delay, dep_tick):
+    # Calculate the packet queue size
+    queue_size += packet_queue.qsize()
+    num_looks += 1
+
+    # Calculate queue delay
+    packet = packet_queue.get()
+    queue_delay += dep_tick - packet['arrival_tick']
+
     logger.debug("Packet departed.")
+
+    # Record tick if queue is empty
+    if packet_queue.qsize() == 0:
+        return dep_tick
 
 def calc_next_departure_time(sim_params):
     return sim_params.packet_size / sim_params.transmission_rate
@@ -38,6 +53,9 @@ def calc_next_arrival_time(sim_params):
 def create_report():
     pass
 
+def save_run_variables():
+    pass
+
 def main(sim_params):
     logger.debug(sim_params)
 
@@ -47,28 +65,41 @@ def main(sim_params):
         random.seed(i)
         packet_queue = Queue()
 
+        # Calculating rho
+        sim_params.rho = sim_params.l * (sim_params.packet_size / sim_params.transmission_rate)
+
         arrival_tick = calc_next_arrival_time(sim_params)  # calculate first packet arrival time
         dep_tick = sim_params.ticks + 1  # Departure only occurs after the first arrival
         logger.info("First arrival_tick = " + str(arrival_tick))
         logger.info("First departure tick = " + str(dep_tick))
 
+        # Initialize simulation results to zero for computing average
+        queue_size = 0
+        num_looks = 0
+        queue_delay = 0
+        server_idle_time = 0
+        queue_empty_tick = 0
+
         for cur_tick in range(sim_params.ticks):
             if cur_tick >= arrival_tick:
-                arrival(packet_queue)
+                arrival(packet_queue, arrival_tick, queue_empty_tick, server_idle_time)
 
                 arrival_tick = cur_tick + calc_next_arrival_time(sim_params)
                 dep_tick = cur_tick + calc_next_departure_time(sim_params)
 
             if cur_tick >= dep_tick:
-                departure(packet_queue)
+                queue_empty_tick = departure(packet_queue, queue_size, num_looks, queue_delay, dep_tick)
                 dep_tick = sim_params.ticks + 1
+
+        save_run_variables()
+
 
     create_report()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Simulates a network queue based on the given parameters.')
     parser.add_argument('-l', type=int, default=200)
-    parser.add_argument('--tick-length', type=int, default=500000, help="1 tick = ? sec")
+    parser.add_argument('--tick-length', type=int, default=500000, help="1 sec = ? ticks")
     parser.add_argument('--ticks', type=int, default=10000)
     parser.add_argument('--packet-size', type=int, default=512)
     parser.add_argument('--transmission-rate', type=int, default=512)
