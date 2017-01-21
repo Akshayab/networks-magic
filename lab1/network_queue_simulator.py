@@ -44,6 +44,8 @@ def departure(packet_queue, cur_tick, run_results, sim_params):
     run_results.queue_size += packet_queue.qsize()
     run_results.num_looks += 1
 
+    print("results", run_results.num_looks)
+
     # Calculate queue delay
     packet = packet_queue.get()
     run_results.queue_delay += cur_tick - (packet['arrival_tick'])
@@ -87,28 +89,6 @@ def create_report():
 
     plt.show()
 
-    # Pyplot
-    # Their documentation has changed - i will need to change this.
-    # Create a trace
-    # trace = go.Scatter(
-    #     x=x,
-    #     y=y
-    # )
-    #
-    # data = [trace]
-    # layout = go.Layout(
-    #     xaxis=dict(
-    #         title='X_LABEL'
-    #     ),
-    #     yaxis=dict(
-    #         title='Y_LABEL'
-    #     )
-    # )
-    #
-    # fig = go.Figure(data=data, layout=layout)
-    #
-    # py.plot(fig, filename='some-plot')
-
 
 # Relevant variables for report generation
 def save_run_variables(average_queue_size, average_queue_delay, prop_idle_time, run_results, sim_params):
@@ -116,7 +96,7 @@ def save_run_variables(average_queue_size, average_queue_delay, prop_idle_time, 
     average_queue_delay.append(run_results.queue_delay/run_results.num_looks)
     prop_idle_time.append(run_results.server_idle_time/sim_params.ticks)
 
-create_report()
+# create_report()
 
 def main(sim_params):
     logger.debug(sim_params)
@@ -143,7 +123,7 @@ def main(sim_params):
         run_results = RunResults()
         run_results.dep_tick = sim_params.ticks + 1
 
-        for cur_tick in range(sim_params.ticks):
+        for cur_tick in range(1, sim_params.ticks + 2):
             if cur_tick == arrival_tick:
                 arrival(packet_queue, cur_tick, run_results, sim_params)
 
