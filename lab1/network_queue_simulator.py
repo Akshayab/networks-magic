@@ -4,11 +4,6 @@ from math import log
 from result_params import RunResults
 from matplotlib import pyplot as plt
 
-# You need to sudo install pyplot
-import plotly.plotly as py
-import plotly.graph_objs as go
-
-
 import random
 import argparse
 import logging
@@ -44,8 +39,6 @@ def departure(packet_queue, cur_tick, run_results, sim_params):
     run_results.queue_size += packet_queue.qsize()
     run_results.num_looks += 1
 
-    print("results", run_results.num_looks)
-
     # Calculate queue delay
     packet = packet_queue.get()
     run_results.queue_delay += cur_tick - (packet['arrival_tick'])
@@ -75,8 +68,9 @@ def calc_next_arrival_time(sim_params):
 
 
 # TODO: Generate report
-def create_report():
-    print "Reached here"
+def create_report(queue_size, queue_delay, idle_time):
+
+    print(queue_size, queue_delay, idle_time)
     # ASHWIN: Example for 5 x values and 5 y values. Replace x and y with relevant information
 
     # Matplotlib
@@ -89,14 +83,6 @@ def create_report():
 
     plt.show()
 
-
-# Relevant variables for report generation
-def save_run_variables(average_queue_size, average_queue_delay, prop_idle_time, run_results, sim_params):
-    average_queue_size.append(run_results.queue_size/run_results.num_looks)
-    average_queue_delay.append(run_results.queue_delay/run_results.num_looks)
-    prop_idle_time.append(run_results.server_idle_time/sim_params.ticks)
-
-# create_report()
 
 def main(sim_params):
     logger.debug(sim_params)
@@ -114,7 +100,7 @@ def main(sim_params):
         # Calculating rho
         sim_params.rho = sim_params.l * (sim_params.packet_size / sim_params.transmission_rate)
 
-        arrival_tick = calc_next_arrival_time(sim_params)  # calculate first packet arrival time
+        arrival_tick = int(calc_next_arrival_time(sim_params))  # calculate first packet arrival time
         dep_tick = sim_params.ticks + 1  # Departure only occurs after the first arrival
         logger.info("First arrival_tick = " + str(arrival_tick))
         logger.info("First departure tick = " + str(dep_tick))
@@ -132,9 +118,12 @@ def main(sim_params):
             if cur_tick == run_results.dep_tick:
                 departure(packet_queue, cur_tick, run_results, sim_params)
 
-        save_run_variables(average_queue_size, average_queue_delay, prop_idle_time, run_results, sim_params)
+        average_queue_size.append(run_results.queue_size / run_results.num_looks)
+        average_queue_delay.append(run_results.queue_delay / run_results.num_looks)
+        prop_idle_time.append(run_results.server_idle_time / sim_params.ticks)
 
-    create_report()
+    create_report(average_queue_size, average_queue_delay, prop_idle_time)
+    return 0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Simulates a network queue based on the given parameters.')
