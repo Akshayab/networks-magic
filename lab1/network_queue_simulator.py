@@ -1,5 +1,5 @@
 from Queue import Queue
-from math import log
+from math import log, ceil
 
 from result_params import RunResults
 from matplotlib import pyplot as plt
@@ -22,12 +22,10 @@ def arrival(packet_queue, cur_tick, run_results, sim_params):
 
     if packet_queue.qsize() == 0:
         run_results.server_idle_time += (cur_tick - run_results.queue_empty_tick)
+        run_results.dep_tick = cur_tick + calc_next_departure_time(sim_params)
 
     new_packet = generate_packet(cur_tick)
     packet_queue.put(new_packet)
-
-    if packet_queue.qsize() == 0:
-        run_results.dep_tick = cur_tick + calc_next_departure_time(sim_params)
 
     logger.debug("Packet arrived.")
     # Also need to consider packet loss case when queue is full
@@ -41,7 +39,8 @@ def departure(packet_queue, cur_tick, run_results, sim_params):
 
     # Calculate queue delay
     packet = packet_queue.get()
-    run_results.queue_delay += cur_tick - (packet['arrival_tick'])
+    # Queue delay = departure time - arrival time - service time
+    run_results.queue_delay += cur_tick - (packet['arrival_tick']) - calc_next_departure_time(sim_params)
 
     logger.debug("Packet departed.")
 
@@ -109,14 +108,16 @@ def main(sim_params):
         run_results = RunResults()
         run_results.dep_tick = sim_params.ticks + 1
 
-        for cur_tick in range(1, sim_params.ticks + 2):
-            if cur_tick == arrival_tick:
+        for cur_tick in range(1, sim_params.ticks):
+            if cur_tick == ceil(arrival_tick):
                 arrival(packet_queue, cur_tick, run_results, sim_params)
 
                 arrival_tick = cur_tick + calc_next_arrival_time(sim_params)
 
-            if cur_tick == run_results.dep_tick:
+            if cur_tick == ceil(run_results.dep_tick):
                 departure(packet_queue, cur_tick, run_results, sim_params)
+
+        run_results.server_idle_time += (sim_params.ticks - run_results.queue_empty_tick)
 
         average_queue_size.append(run_results.queue_size / run_results.num_looks)
         average_queue_delay.append(run_results.queue_delay / run_results.num_looks)
@@ -148,5 +149,8 @@ if __name__ == "__main__":
         logger.setLevel(logging.INFO)
 
     logger.addHandler(sh)
+
+    # Time = Infinity is set as sim_params.ticks + 1.
+    sim_params.ticks += 2
 
     main(sim_params)
