@@ -67,18 +67,21 @@ def calc_next_arrival_time(sim_params):
 
 
 # TODO: Generate report
-def create_report(queue_size, queue_delay, idle_time):
+def create_report(queue_size, queue_delay, idle_time, rho):
 
-    print(queue_size, queue_delay, idle_time)
-    # ASHWIN: Example for 5 x values and 5 y values. Replace x and y with relevant information
+    print(queue_size, queue_delay, idle_time, rho)
 
-    # Matplotlib
-    x = [1, 2, 3, 4, 5]
-    y = [1, 1, 2, 4, 5]
+    plt.plot(rho, queue_size)
+    plt.xlabel('Rho')
+    plt.ylabel('Queue Size')
 
-    plt.plot(x, y)
-    plt.xlabel('X_LABEL')
-    plt.ylabel('Y_LABEL')
+    plt.plot(rho, queue_delay)
+    plt.xlabel('Rho')
+    plt.ylabel('Queue Delay')
+
+    plt.plot(rho, idle_time)
+    plt.xlabel('Rho')
+    plt.ylabel('Idle Time')
 
     plt.show()
 
@@ -89,6 +92,8 @@ def main(sim_params):
     average_queue_size = []
     average_queue_delay = []
     prop_idle_time = []
+
+    rho = []
 
     for i in range(sim_params.num_runs):
         logger.info("Run " + str(i+1) + "/" + str(sim_params.num_runs) + ": ")
@@ -119,21 +124,29 @@ def main(sim_params):
 
         run_results.server_idle_time += (sim_params.ticks - run_results.queue_empty_tick)
 
+        # Save run results after each run for plotting at the end
         average_queue_size.append(run_results.queue_size / run_results.num_looks)
         average_queue_delay.append(run_results.queue_delay / run_results.num_looks)
         prop_idle_time.append(run_results.server_idle_time / sim_params.ticks)
 
-    create_report(average_queue_size, average_queue_delay, prop_idle_time)
+        # Calculate and save rho to plot values, saved above, against
+        current_rho = (sim_params.l * sim_params.packet_size)/float(sim_params.transmission_rate)
+        rho.append(current_rho)
+
+        # Modify input rate for the next run
+        sim_params.l += 50
+
+    create_report(average_queue_size, average_queue_delay, prop_idle_time, rho)
     return 0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Simulates a network queue based on the given parameters.')
-    parser.add_argument('-l', type=int, default=200)
+    parser.add_argument('-l', type=int, default=100)
     parser.add_argument('--tick-length', type=int, default=500000, help="1 sec = ? ticks")
     parser.add_argument('--ticks', type=int, default=10000)
-    parser.add_argument('--packet-size', type=int, default=512)
-    parser.add_argument('--transmission-rate', type=int, default=512)
-    parser.add_argument('--num-runs', type=int, default=1)
+    parser.add_argument('--packet-size', type=int, default=2000)
+    parser.add_argument('--transmission-rate', type=int, default=1000000)
+    parser.add_argument('--num-runs', type=int, default=5)
     parser.add_argument('--debug', action="store_true")
 
     sim_params = parser.parse_args()
