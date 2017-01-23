@@ -267,13 +267,41 @@ def infinite_queue_simulation(sim_params):
     create_report_inf(average_queue_size, average_queue_delay, prop_idle_time, average_sojourn_time, rho)
 
 
+def custom_simulation(sim_params):
+    average_queue_size = []
+    average_queue_delay = []
+    prop_idle_time = []
+    average_sojourn_time = []
+    packet_loss = []
+    rho = []
+
+    simulate(sim_params, sim_params.max_size, average_queue_size, average_queue_delay, prop_idle_time,
+             average_sojourn_time, packet_loss, rho)
+
+    logger.info("Average queue size: ")
+    logger.info(average_queue_size)
+    logger.info("Queue delay: ")
+    logger.info(average_queue_delay)
+    logger.info("Idle Time: ")
+    logger.info(prop_idle_time)
+    logger.info("Average Packet Loss: ")
+    logger.info(packet_loss)
+    logger.info("Average Sojourn Time: ")
+    logger.info(average_sojourn_time)
+    logger.info("Rho: ")
+    logger.info(rho)
+
+
 def main(sim_params):
     logger.debug(sim_params)
 
-    if sim_params.finite_queue:
-        finite_queue_simulation(sim_params)
+    if sim_params.custom_sim:
+        custom_simulation(sim_params)
     else:
-        infinite_queue_simulation(sim_params)
+        if sim_params.finite_queue:
+            finite_queue_simulation(sim_params)
+        else:
+            infinite_queue_simulation(sim_params)
 
     # create_report(average_queue_size, average_queue_delay, prop_idle_time, average_sojourn_time, packet_loss, rho)
     return 0
@@ -288,6 +316,8 @@ if __name__ == "__main__":
     parser.add_argument('--num-runs', type=int, default=5)
     parser.add_argument('--debug', action="store_true")
     parser.add_argument('--finite_queue', action="store_true")
+    parser.add_argument('--max_size', default=0, help="Set this var less than or equal to zero for infinite size queue")
+    parser.add_argument('--custom_sim', action="store_true")
 
     sim_params = parser.parse_args()
 
@@ -302,8 +332,6 @@ if __name__ == "__main__":
         logger.setLevel(logging.INFO)
 
     logger.addHandler(sh)
-
-    sim_params.finite_queue = True
 
     # Time = Infinity is set as sim_params.ticks + 1.
     sim_params.ticks += 1
