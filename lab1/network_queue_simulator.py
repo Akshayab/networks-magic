@@ -153,7 +153,7 @@ def main(sim_params):
         average_sojourn_time = []
         packet_loss = []
         rho = []
-        for sim_params.l in range(50, 500, 50):
+        for sim_params.l in range(250, 750, 50):
 
             for i in range(sim_params.num_runs):
                 logger.info("Run " + str(i+1) + "/" + str(sim_params.num_runs) + ": ")
