@@ -92,7 +92,7 @@ def create_report(queue_size, queue_delay, idle_time, average_sojourn_time, pack
 
     plt.figure(1)
     for i in range(3):
-        plt.plot(rho[i], queue_size[i], label=labels[i], alpla=0.5)
+        plt.plot(rho[i], queue_size[i], label=labels[i], alpha=0.5)
 
     plt.xlabel('Rho')
     plt.ylabel('Queue Size')
@@ -100,7 +100,7 @@ def create_report(queue_size, queue_delay, idle_time, average_sojourn_time, pack
 
     plt.figure(2)
     for i in range(3):
-        plt.plot(rho[i], queue_delay[i], label=labels[i], alpla=0.5)
+        plt.plot(rho[i], queue_delay[i], label=labels[i], alpha=0.5)
 
     plt.xlabel('Rho')
     plt.ylabel('Queue Delay')
@@ -108,7 +108,7 @@ def create_report(queue_size, queue_delay, idle_time, average_sojourn_time, pack
 
     plt.figure(3)
     for i in range(3):
-        plt.plot(rho[i], idle_time[i], label=labels[i], alpla=0.5)
+        plt.plot(rho[i], idle_time[i], label=labels[i], alpha=0.5)
 
     plt.xlabel('Rho')
     plt.ylabel('Idle Time')
@@ -116,7 +116,7 @@ def create_report(queue_size, queue_delay, idle_time, average_sojourn_time, pack
 
     plt.figure(4)
     for i in range(3):
-        plt.plot(rho[i], average_sojourn_time[i], label=labels[i], alpla=0.5)
+        plt.plot(rho[i], average_sojourn_time[i], label=labels[i], alpha=0.5)
 
     plt.xlabel('Rho')
     plt.ylabel('Average Sojourn Time')
@@ -125,7 +125,7 @@ def create_report(queue_size, queue_delay, idle_time, average_sojourn_time, pack
     # For an M/D/K buffer
     plt.figure(5)
     for i in range(3):
-        plt.plot(rho[i], packet_loss[i], label=labels[i], alpla=0.5)
+        plt.plot(rho[i], packet_loss[i], label=labels[i], alpha=0.5)
 
     plt.xlabel('Rho')
     plt.ylabel('Packet Loss')
