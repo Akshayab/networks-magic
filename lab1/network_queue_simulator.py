@@ -19,6 +19,11 @@ def generate_packet(arrival_tick):
 
 # Handles arrival of a new packet
 def arrival(packet_queue, cur_tick, run_results, sim_params):
+    # If finite queue and the queue is full, drop the packet
+    if packet_queue.maxsize > 0:
+        if packet_queue.qsize() == packet_queue.maxsize:
+            run_results.packet_loss += 1
+            return
 
     if packet_queue.qsize() == 0:
         run_results.server_idle_time += (cur_tick - run_results.queue_empty_tick)
@@ -28,7 +33,6 @@ def arrival(packet_queue, cur_tick, run_results, sim_params):
     packet_queue.put(new_packet)
 
     logger.debug("Packet arrived.")
-    # Also need to consider packet loss case when queue is full
 
 
 # Handles departure of the latest packet in the buffer
@@ -41,6 +45,7 @@ def departure(packet_queue, cur_tick, run_results, sim_params):
     packet = packet_queue.get()
     # Queue delay = departure time - arrival time - service time
     run_results.queue_delay += cur_tick - (packet['arrival_tick']) - calc_next_departure_time(sim_params)
+    run_results.sojourn_time += cur_tick - (packet['arrival_tick'])
 
     logger.debug("Packet departed.")
 
@@ -66,22 +71,36 @@ def calc_next_arrival_time(sim_params):
     return arrival_time
 
 
-# TODO: Generate report
-def create_report(queue_size, queue_delay, idle_time, rho):
+def create_report(queue_size, queue_delay, idle_time, average_sojourn_time, rho):
 
-    print(queue_size, queue_delay, idle_time, rho)
+    logger.info("Average queue size: ")
+    logger.info(queue_size)
+    logger.info("Queue delay: ")
+    logger.info(queue_delay)
+    logger.info("Idle Time: ")
+    logger.info(idle_time)
+    logger.info("Rho: ")
+    logger.info(rho)
 
+    plt.figure(1)
     plt.plot(rho, queue_size)
     plt.xlabel('Rho')
     plt.ylabel('Queue Size')
 
+    plt.figure(2)
     plt.plot(rho, queue_delay)
     plt.xlabel('Rho')
     plt.ylabel('Queue Delay')
 
+    plt.figure(3)
     plt.plot(rho, idle_time)
     plt.xlabel('Rho')
     plt.ylabel('Idle Time')
+
+    plt.figure(4)
+    plt.plot(rho, average_sojourn_time)
+    plt.xlabel('Rho')
+    plt.ylabel('Average Sojourn Time')
 
     plt.show()
 
@@ -92,54 +111,54 @@ def main(sim_params):
     average_queue_size = []
     average_queue_delay = []
     prop_idle_time = []
+    average_sojourn_time = []
 
     rho = []
 
-    for i in range(sim_params.num_runs):
-        logger.info("Run " + str(i+1) + "/" + str(sim_params.num_runs) + ": ")
-        logger.info("Setting random number seed to " + str(i))
-        random.seed(i)
-        packet_queue = Queue()
+    for sim_params.l in range(50, 500, 50):
+        for i in range(sim_params.num_runs):
+            logger.info("Run " + str(i+1) + "/" + str(sim_params.num_runs) + ": ")
+            logger.info("Setting random number seed to " + str(i))
+            random.seed(i)
+            packet_queue = Queue()
 
-        # Calculating rho
-        sim_params.rho = sim_params.l * (sim_params.packet_size / sim_params.transmission_rate)
+            # Calculating rho
+            sim_params.rho = sim_params.l * (sim_params.packet_size / sim_params.transmission_rate)
 
-        arrival_tick = int(calc_next_arrival_time(sim_params))  # calculate first packet arrival time
-        dep_tick = sim_params.ticks + 1  # Departure only occurs after the first arrival
-        logger.info("First arrival_tick = " + str(arrival_tick))
-        logger.info("First departure tick = " + str(dep_tick))
+            arrival_tick = int(calc_next_arrival_time(sim_params))  # calculate first packet arrival time
+            dep_tick = sim_params.ticks + 1  # Departure only occurs after the first arrival
+            logger.info("First arrival_tick = " + str(arrival_tick))
+            logger.info("First departure tick = " + str(dep_tick))
 
-        # Initialize simulation results to zero for computing average
-        run_results = RunResults()
-        run_results.dep_tick = sim_params.ticks + 1
+            # Initialize simulation results to zero for computing average
+            run_results = RunResults()
+            run_results.dep_tick = sim_params.ticks + 1
 
-        for cur_tick in range(1, sim_params.ticks):
-            if cur_tick == ceil(arrival_tick):
-                arrival(packet_queue, cur_tick, run_results, sim_params)
+            for cur_tick in range(1, sim_params.ticks):
+                if cur_tick == ceil(arrival_tick):
+                    arrival(packet_queue, cur_tick, run_results, sim_params)
 
-                arrival_tick = cur_tick + calc_next_arrival_time(sim_params)
+                    arrival_tick = cur_tick + calc_next_arrival_time(sim_params)
 
-            if cur_tick == ceil(run_results.dep_tick):
-                departure(packet_queue, cur_tick, run_results, sim_params)
+                if cur_tick == ceil(run_results.dep_tick):
+                    departure(packet_queue, cur_tick, run_results, sim_params)
 
-        run_results.server_idle_time += (sim_params.ticks - run_results.queue_empty_tick)
+            run_results.server_idle_time += (sim_params.ticks - run_results.queue_empty_tick)
 
-        if run_results.num_looks == 0:
-            logger.warn("Simulation was too short to simulate departure")
+            if run_results.num_looks == 0:
+                logger.warn("Simulation was too short to simulate departure")
 
-        # Save run results after each run for plotting at the end
-        average_queue_size.append(run_results.queue_size / run_results.num_looks)
-        average_queue_delay.append(run_results.queue_delay / run_results.num_looks)
-        prop_idle_time.append(run_results.server_idle_time / float(sim_params.ticks))
+            # Save run results after each run for plotting at the end
+            average_queue_size.append(run_results.queue_size / run_results.num_looks)
+            average_queue_delay.append(run_results.queue_delay / run_results.num_looks)
+            prop_idle_time.append(run_results.server_idle_time / float(sim_params.ticks))
+            average_sojourn_time.append(run_results.sojourn_time / run_results.num_looks)
 
-        # Calculate and save rho to plot values, saved above, against
-        current_rho = (sim_params.l * sim_params.packet_size)/float(sim_params.transmission_rate)
-        rho.append(current_rho)
+            # Calculate and save rho to plot values, saved above, against
+            current_rho = (sim_params.l * sim_params.packet_size)/float(sim_params.transmission_rate)
+            rho.append(current_rho)
 
-        # Modify input rate for the next run
-        sim_params.l += 50
-
-    create_report(average_queue_size, average_queue_delay, prop_idle_time, rho)
+    create_report(average_queue_size, average_queue_delay, prop_idle_time, average_sojourn_time, rho)
     return 0
 
 if __name__ == "__main__":
@@ -167,6 +186,6 @@ if __name__ == "__main__":
     logger.addHandler(sh)
 
     # Time = Infinity is set as sim_params.ticks + 1.
-    sim_params.ticks += 2
+    sim_params.ticks += 1
 
     main(sim_params)
