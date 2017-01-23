@@ -54,7 +54,7 @@ def departure(packet_queue, cur_tick, run_results, sim_params):
 
 # Time taken to process a packet
 def calc_next_departure_time(sim_params):
-    return sim_params.packet_size / sim_params.transmission_rate
+    return (sim_params.packet_size / float(sim_params.transmission_rate)) * sim_params.tick_length
 
 
 # Random generator used to calculate the tick when the next packet will be generated
@@ -124,10 +124,13 @@ def main(sim_params):
 
         run_results.server_idle_time += (sim_params.ticks - run_results.queue_empty_tick)
 
+        if run_results.num_looks == 0:
+            logger.warn("Simulation was too short to simulate departure")
+
         # Save run results after each run for plotting at the end
         average_queue_size.append(run_results.queue_size / run_results.num_looks)
         average_queue_delay.append(run_results.queue_delay / run_results.num_looks)
-        prop_idle_time.append(run_results.server_idle_time / sim_params.ticks)
+        prop_idle_time.append(run_results.server_idle_time / float(sim_params.ticks))
 
         # Calculate and save rho to plot values, saved above, against
         current_rho = (sim_params.l * sim_params.packet_size)/float(sim_params.transmission_rate)
@@ -143,7 +146,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Simulates a network queue based on the given parameters.')
     parser.add_argument('-l', type=int, default=100)
     parser.add_argument('--tick-length', type=int, default=500000, help="1 sec = ? ticks")
-    parser.add_argument('--ticks', type=int, default=10000)
+    parser.add_argument('--ticks', type=int, default=2000000)
     parser.add_argument('--packet-size', type=int, default=2000)
     parser.add_argument('--transmission-rate', type=int, default=1000000)
     parser.add_argument('--num-runs', type=int, default=5)
