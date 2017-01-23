@@ -84,45 +84,52 @@ def create_report(queue_size, queue_delay, idle_time, average_sojourn_time, pack
     logger.info("Rho: ")
     logger.info(rho)
 
+    labels = ['M/D/10', 'M/D/25', 'M/D/50']
+
     print np.shape(rho)
     print np.shape(queue_delay)
     print np.shape(packet_loss)
 
     plt.figure(1)
     for i in range(3):
-        plt.plot(rho[i], queue_size[i])
+        plt.plot(rho[i], queue_size[i], label=labels[i])
 
     plt.xlabel('Rho')
     plt.ylabel('Queue Size')
+    plt.legend(loc='upper right')
 
     plt.figure(2)
     for i in range(3):
-        plt.plot(rho[i], queue_delay[i])
+        plt.plot(rho[i], queue_delay[i], label=labels[i])
 
     plt.xlabel('Rho')
     plt.ylabel('Queue Delay')
+    plt.legend(loc='upper right')
 
     plt.figure(3)
     for i in range(3):
-        plt.plot(rho[i], idle_time[i])
+        plt.plot(rho[i], idle_time[i], label=labels[i])
 
     plt.xlabel('Rho')
     plt.ylabel('Idle Time')
+    plt.legend(loc='upper right')
 
     plt.figure(4)
     for i in range(3):
-        plt.plot(rho[i], average_sojourn_time[i])
+        plt.plot(rho[i], average_sojourn_time[i], label=labels[i])
 
     plt.xlabel('Rho')
     plt.ylabel('Average Sojourn Time')
+    plt.legend(loc='upper right')
 
     # For an M/D/K buffer
     plt.figure(5)
     for i in range(3):
-        plt.plot(rho[i], packet_loss[i])
+        plt.plot(rho[i], packet_loss[i], label=labels[i])
 
     plt.xlabel('Rho')
     plt.ylabel('Packet Loss')
+    plt.legend(loc='upper right')
 
     plt.show()
 
