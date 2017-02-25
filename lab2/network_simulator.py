@@ -9,7 +9,18 @@ def simulate(sim_params, logger):
     stations = []
 
     for i in range(sim_params.N):
-        stations.append(Computer(logger))
+        stations.append(Computer(logger, sim_params))
+
+    for tick in range(sim_params.ticks):
+        for station in stations:
+            if station.next_arrival_tick == tick:
+                station.arrival()
+
+            if station.next_event_tick == tick:
+                station.csma_cd()
+
+            if station.depart_packet:
+                station.departure(tick)
 
 
 def main(parser):

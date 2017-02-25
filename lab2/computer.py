@@ -5,9 +5,16 @@ from math import log, ceil
 
 
 class Computer:
-    def __init__(self, logger):
+    def __init__(self, logger, sim_params):
         self.next_event_tick = 0
+        self.next_arrival_tick = 0
+
+        self.depart_packet = False
+
+        self.packet_queue = Queue()
+
         self.logger = logger
+        self.sim_params = sim_params
 
     def generate_packet(self, arrival_tick):
         packet = {}
@@ -15,43 +22,52 @@ class Computer:
 
         return packet
 
-    # Handles arrival of a new packet
-    def arrival(self, packet_queue, cur_tick, run_results, sim_params):
-        # If finite queue and the queue is full, drop the packet
-        if packet_queue.maxsize > 0:
-            if packet_queue.qsize() == packet_queue.maxsize:
-                run_results.packet_loss += 1
-                return
+    def packet_generator(self):
+        self.next_arrival_tick = self.calc_next_arrival_time(self.sim_params)
 
-        if packet_queue.qsize() == 0:
-            run_results.server_idle_time += (cur_tick - run_results.queue_empty_tick)
-            run_results.dep_tick = cur_tick + self.calc_next_departure_time(sim_params)
+
+    def csma_cd(self):
+        self.next_event_tick += 960
+        yield
+
+        while self.medium_busy():
+            # self.next_event_tick += self.bin_exp_back()
+            self.next_event_tick += 960
+            yield
+
+        self.depart_packet = True
+
+
+    def medium_busy(self):
+        pass
+
+    # Handles arrival of a new packet
+    def arrival(self, cur_tick, run_results):
+        if self.packet_queue.qsize() == 0:
+            self.next_event_tick = cur_tick
+            run_results.dep_tick = cur_tick + self.calc_next_departure_time(self.sim_params)
 
         new_packet = self.generate_packet(cur_tick)
-        packet_queue.put(new_packet)
+        self.packet_queue.put(new_packet)
 
         self.logger.debug("Packet arrived.")
 
     # Handles departure of the latest packet in the buffer
-    def departure(self, packet_queue, cur_tick, run_results, sim_params):
+    def departure(self, cur_tick, run_results):
         # Calculate the packet queue size
-        run_results.queue_size += packet_queue.qsize()
+        run_results.queue_size += self.packet_queue.qsize()
         run_results.num_looks += 1
 
         # Calculate queue delay
-        packet = packet_queue.get()
-        # Queue delay = departure time - arrival time - service time
-        run_results.queue_delay += cur_tick - (packet['arrival_tick']) - self.calc_next_departure_time(sim_params)
-        run_results.sojourn_time += cur_tick - (packet['arrival_tick'])
+        packet = self.packet_queue.get()
 
-        logger.debug("Packet departed.")
+        self.logger.debug("Packet departed.")
 
         # Record tick if queue is empty and set the next departure time to be Inf (total ticks + 1)
-        if packet_queue.qsize() == 0:
-            run_results.queue_empty_tick = cur_tick
-            run_results.dep_tick = sim_params.ticks + 1
+        if self.packet_queue.qsize() == 0:
+            run_results.dep_tick = self.sim_params.ticks + 1
         else:
-            run_results.dep_tick = cur_tick + self.calc_next_departure_time(sim_params)
+            run_results.dep_tick = cur_tick + self.calc_next_departure_time(self.sim_params)
 
     # Time taken to process a packet
     def calc_next_departure_time(self, sim_params):
