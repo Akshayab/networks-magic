@@ -1,3 +1,6 @@
+# Authors: Akshay Budhkar and Ashwin Raman
+# Submission for ECE 358 Lab 1
+
 from Queue import Queue
 from math import log, ceil
 
@@ -9,6 +12,7 @@ import argparse
 import logging
 import sys
 import numpy as np
+
 
 def generate_packet(arrival_tick):
     packet = {}
