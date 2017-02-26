@@ -7,6 +7,7 @@ class Hub:
         self.collision_end_tick = 0
 
         self.num_collisions = 0
+        self.stations = []
 
     def update_collision(self):
         self.has_collided = True
@@ -14,10 +15,10 @@ class Hub:
         while not self.hub_packet_queue.empty():
             self.hub_packet_queue.get()
 
-    def trasmit(self):
-        self.hub.hub_packet_queue.get()
+    def transmit(self):
+        packet = self.hub_packet_queue.get()
         for station in self.stations:
-            station.receive_queue.put(1)
+            station.t1_queue.put(packet)
 
         return self.check_last_stage_collision()
 
@@ -26,9 +27,12 @@ class Hub:
     def check_last_stage_collision(self):
         collided = False
         for station in self.stations:
-            if station.receive_queue.qsize() > 1:
-                station.local_collision = True
+            if station.t1_queue.qsize() > 1:
                 collided = True
                 self.num_collisions += 1
 
         return collided
+
+    def complete_transmission(self):
+        for station in self.stations:
+            station.t1_queue.get()

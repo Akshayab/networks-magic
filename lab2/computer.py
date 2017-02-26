@@ -20,8 +20,7 @@ class Computer:
         self.i = 0
         self.packet_generator()
         self.fsm = self.csma_cd()
-        self.receive_queue = Queue()
-        self.local_collision = False
+        self.t1_queue = Queue()
 
     def generate_packet(self, arrival_tick):
         packet = {}
@@ -49,13 +48,34 @@ class Computer:
                 j += 1
                 yield
 
-            self.next_event_tick += prop_length/3
             self.logger.debug("Transmitting - 1")
+            self.next_event_tick += 1
             self.logger.debug("Next event tick: " + str(self.next_event_tick))
-            yield
+            self.t1_queue.put(1)
 
-            # Ignoring Mac level collisions
-            self.hub.hub_packet_queue.put(1)
+            local_collision = False
+            for i in range(prop_length/3):
+                if i == (prop_length / 3) - 1:
+                    if self.hub.hub_packet_queue.qsize() > 0:
+                        self.hub.update_collision()
+                        local_collision = True
+                        break
+                yield
+
+                # Mac level collisions
+                if self.t1_queue.qsize() > 1:
+                    self.t1_queue.get()
+                    self.next_event_tick += (480 + self.bin_exp_back(self.i))
+                    self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
+                    self.logger.info("Next event tick: " + str(self.next_event_tick))
+                    self.i += 1
+                    continue
+
+            if local_collision:
+                self.collision_handler()
+                continue
+
+            self.hub.hub_packet_queue.put(self.t1_queue.get(1))
 
             for i in range(prop_length/3):
                 self.logger.debug("Hub Queue Size " + str(self.hub.hub_packet_queue.qsize()))
@@ -69,27 +89,46 @@ class Computer:
                 yield
 
             if self.hub.has_collided:
-                self.next_event_tick += (480 + self.bin_exp_back(self.i))
-                self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
-                self.logger.info("Next event tick: " + str(self.next_event_tick))
-                self.i += 1
+                self.collision_handler()
                 continue
 
             self.logger.debug("Transmitting - 3")
             if self.hub.transmit():
-                self.next_event_tick += prop_length / 3
+                self.next_event_tick += 1
                 self.logger.debug("Next event tick: " + str(self.next_event_tick))
                 yield
+
+                local_collision = False
+                for i in range((prop_length/3) - 1):
+                    if self.hub.check_last_stage_collision():
+                        local_collision = True
+                        break
+
+                    self.next_event_tick += 1
+                    self.logger.debug("Transmitting - 3")
+                    self.logger.debug("Next event tick: " + str(self.next_event_tick))
+                    yield
+
+                if local_collision:
+                    self.collision_handler()
+                    continue
             else:
-                self.next_event_tick += (480 + self.bin_exp_back(self.i))
-                self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
-                self.logger.info("Next event tick: " + str(self.next_event_tick))
-                self.i += 1
+                self.collision_handler()
                 continue
 
+            self.hub.complete_transmission()
             self.depart_packet = True
             self.i = 0
             yield
+
+    def collision_handler(self):
+        while self.t1_queue.qsize() > 0:
+            self.t1_queue.get()
+
+        self.next_event_tick += (480 + self.bin_exp_back(self.i))
+        self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
+        self.logger.info("Next event tick: " + str(self.next_event_tick))
+        self.i += 1
 
     def bin_exp_back(self, i):
         if i > 10:
@@ -99,7 +138,7 @@ class Computer:
         return R * 5120
 
     def medium_busy(self):
-        return self.hub.has_collided and (self.hub.hub_packet_queue.qsize > 0)
+        return self.hub.has_collided and (self.hub.hub_packet_queue.qsize > 0) and self.t1_queue.qsize() > 0
 
     # Handles arrival of a new packet
     def arrival(self, cur_tick, run_results):
