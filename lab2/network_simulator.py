@@ -11,6 +11,8 @@ def simulate(sim_params, logger):
     stations = []
     hub = Hub()
 
+    hub.stations = stations
+
     run_results = RunResults()
 
     for i in range(sim_params.N):
@@ -43,7 +45,7 @@ def main(parser):
     # transmission rate = 1 Mbps
     sim_params.transmission_rate = 1000000
 
-    sim_params.ticks = 100000
+    sim_params.ticks = 1000000
 
     logging.info("Begin")
     logger = logging.getLogger(__name__)

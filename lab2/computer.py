@@ -20,6 +20,8 @@ class Computer:
         self.i = 0
         self.packet_generator()
         self.fsm = self.csma_cd()
+        self.receive_queue = Queue()
+        self.local_collision = False
 
     def generate_packet(self, arrival_tick):
         packet = {}
@@ -73,11 +75,17 @@ class Computer:
                 self.i += 1
                 continue
 
-            self.hub.hub_packet_queue.get()
-            self.next_event_tick += prop_length / 3
             self.logger.debug("Transmitting - 3")
-            self.logger.debug("Next event tick: " + str(self.next_event_tick))
-            yield
+            if self.hub.transmit():
+                self.next_event_tick += prop_length / 3
+                self.logger.debug("Next event tick: " + str(self.next_event_tick))
+                yield
+            else:
+                self.next_event_tick += (480 + self.bin_exp_back(self.i))
+                self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
+                self.logger.info("Next event tick: " + str(self.next_event_tick))
+                self.i += 1
+                continue
 
             self.depart_packet = True
             self.i = 0
