@@ -2,14 +2,16 @@ import logging
 import argparse
 import sys
 
+from hub import Hub
 from computer import Computer
 
 
 def simulate(sim_params, logger):
     stations = []
 
+    hub = Hub()
     for i in range(sim_params.N):
-        stations.append(Computer(logger, sim_params))
+        stations.append(Computer(logger, sim_params, hub))
 
     for tick in range(sim_params.ticks):
         for station in stations:
@@ -35,6 +37,8 @@ def main(parser):
 
     # transmission rate = 1 Mbps
     sim_params.transmission_rate = 1000000
+
+    sim_params.ticks = 10000
 
     logger = logging.getLogger(__name__)
     sh = logging.StreamHandler(sys.stdout)
