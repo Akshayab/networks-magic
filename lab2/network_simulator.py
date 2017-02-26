@@ -9,7 +9,7 @@ from computer import Computer
 
 def simulate(sim_params, logger):
     stations = []
-    hub = Hub()
+    hub = Hub(logger)
 
     hub.stations = stations
 
@@ -45,7 +45,7 @@ def main(parser):
     # transmission rate = 1 Mbps
     sim_params.transmission_rate = 1000000
 
-    sim_params.ticks = 1000000
+    sim_params.ticks = 100000
 
     logging.info("Begin")
     logger = logging.getLogger(__name__)

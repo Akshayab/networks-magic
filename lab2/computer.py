@@ -33,28 +33,30 @@ class Computer:
 
     def csma_cd(self):
         while(True):
-            prop_length = 3
+            prop_length = 30
             self.next_event_tick += 960
             self.logger.debug("Before sensing medium")
             self.logger.debug("Next event tick: " + str(self.next_event_tick))
             yield
 
             j = 0
+            self.logger.debug("medium busy = " + str(self.medium_busy()))
             while self.medium_busy():
-                self.next_event_tick += self.bin_exp_back(j)
+                #self.next_event_tick += self.bin_exp_back(j)
                 self.next_event_tick += 960
                 self.logger.debug("Sensing medium")
                 self.logger.debug("Next event tick: " + str(self.next_event_tick))
                 j += 1
+                self.logger.debug("medium busy = " + str(self.medium_busy()))
                 yield
 
             self.logger.debug("Transmitting - 1")
-            self.next_event_tick += 1
-            self.logger.debug("Next event tick: " + str(self.next_event_tick))
             self.t1_queue.put(1)
 
             local_collision = False
             for i in range(prop_length/3):
+                self.next_event_tick += 1
+                self.logger.debug("Next event tick: " + str(self.next_event_tick))
                 if i == (prop_length / 3) - 1:
                     if self.hub.hub_packet_queue.qsize() > 0:
                         self.hub.update_collision()
@@ -64,18 +66,17 @@ class Computer:
 
                 # Mac level collisions
                 if self.t1_queue.qsize() > 1:
-                    self.t1_queue.get()
-                    self.next_event_tick += (480 + self.bin_exp_back(self.i))
-                    self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
-                    self.logger.info("Next event tick: " + str(self.next_event_tick))
-                    self.i += 1
-                    continue
+                    local_collision = True
+                    break
 
             if local_collision:
+                self.logger.debug("T1 collision")
                 self.collision_handler()
+                yield
                 continue
 
-            self.hub.hub_packet_queue.put(self.t1_queue.get(1))
+            self.hub.hub_packet_queue.put(self.t1_queue.get())
+            self.logger.debug("T1 queue size : " + str(self.t1_queue.qsize()))
 
             for i in range(prop_length/3):
                 self.logger.debug("Hub Queue Size " + str(self.hub.hub_packet_queue.qsize()))
@@ -89,7 +90,9 @@ class Computer:
                 yield
 
             if self.hub.has_collided:
+                self.hub.has_collided = False
                 self.collision_handler()
+                yield
                 continue
 
             self.logger.debug("Transmitting - 3")
@@ -100,7 +103,7 @@ class Computer:
 
                 local_collision = False
                 for i in range((prop_length/3) - 1):
-                    if self.hub.check_last_stage_collision():
+                    if not self.hub.check_last_stage_collision():
                         local_collision = True
                         break
 
@@ -110,10 +113,14 @@ class Computer:
                     yield
 
                 if local_collision:
+                    self.logger.info("T3 collision - intermediate fail")
                     self.collision_handler()
+                    yield
                     continue
             else:
+                self.logger.info("T3 collision - Transmit failed")
                 self.collision_handler()
+                yield
                 continue
 
             self.hub.complete_transmission()
@@ -138,7 +145,7 @@ class Computer:
         return R * 5120
 
     def medium_busy(self):
-        return self.hub.has_collided and (self.hub.hub_packet_queue.qsize > 0) and self.t1_queue.qsize() > 0
+        return self.hub.has_collided or (self.hub.hub_packet_queue.qsize() > 0) or (self.t1_queue.qsize() > 0)
 
     # Handles arrival of a new packet
     def arrival(self, cur_tick, run_results):
@@ -161,9 +168,9 @@ class Computer:
         run_results.num_looks += 1
 
         # Calculate queue delay
-        packet = self.packet_queue.get()
+        self.packet_queue.get()
 
-        self.logger.debug("Packet departed.")
+        self.logger.info("Packet departed.")
 
         # Record tick if queue is empty and set the next departure time to be Inf (total ticks + 1)
         if self.packet_queue.qsize() == 0:
