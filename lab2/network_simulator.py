@@ -2,27 +2,32 @@ import logging
 import argparse
 import sys
 
+from result_params import RunResults
 from hub import Hub
 from computer import Computer
 
 
 def simulate(sim_params, logger):
     stations = []
-
     hub = Hub()
+
+    run_results = RunResults()
+
     for i in range(sim_params.N):
         stations.append(Computer(logger, sim_params, hub))
 
     for tick in range(sim_params.ticks):
         for station in stations:
             if station.next_arrival_tick == tick:
-                station.arrival()
+                station.arrival(tick, run_results)
+                logger.debug("Tick " + str(tick))
 
             if station.next_event_tick == tick:
-                station.csma_cd()
+                logger.debug("Tick " + str(tick))
+                station.fsm.next()
 
             if station.depart_packet:
-                station.departure(tick)
+                station.departure(tick, run_results)
 
 
 def main(parser):
@@ -38,8 +43,9 @@ def main(parser):
     # transmission rate = 1 Mbps
     sim_params.transmission_rate = 1000000
 
-    sim_params.ticks = 10000
+    sim_params.ticks = 100000
 
+    logging.info("Begin")
     logger = logging.getLogger(__name__)
     sh = logging.StreamHandler(sys.stdout)
 
@@ -59,8 +65,8 @@ def main(parser):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Simulates a network queue based on the given parameters.')
-    parser.add_argument('-N', type=int, default=4)
-    parser.add_argument('-A', type=int, default=100)
+    parser.add_argument('-N', type=int, default=16)
+    parser.add_argument('-A', type=int, default=16)
     #parser.add_argument('--ticks', type=int, default=2000000)
     #parser.add_argument('--num-runs', type=int, default=5)
     parser.add_argument('--debug', action="store_true")
