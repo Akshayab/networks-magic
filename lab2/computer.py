@@ -1,3 +1,11 @@
+#########################
+# Authors: Akshay Budhkar and Ashwin Raman
+# Submission for Lab 2 of ECE 358/
+# Simulates behavior of every computer station.
+# Implements CSMA/CD protocol and handles collisions at a lower level.
+# Responsible for packet generation and departure
+#########################
+
 import random
 
 from Queue import Queue
@@ -35,10 +43,13 @@ class Computer:
         self.next_arrival_tick += self.calc_next_arrival_time(self.sim_params)
 
     def csma_cd(self):
-        while(True):
+        while True:
             self.current_delay = self.next_event_tick
 
             prop_length = 9
+
+            # Assumption: Sensing medium takes 1 tick as mentioned in the PPT and not 96 us as mentioned in the
+            # state diagram
             self.next_event_tick += 1
             self.logger.debug("Before sensing medium")
             self.logger.debug("Next event tick: " + str(self.next_event_tick))
@@ -47,7 +58,9 @@ class Computer:
             j = 0
             self.logger.debug("medium busy = " + str(self.medium_busy()))
             while self.medium_busy():
-                #self.next_event_tick += self.bin_exp_back(j)
+                # For non-persistent protocol
+                # self.next_event_tick += self.bin_exp_back(j)
+
                 self.next_event_tick += 1
                 self.logger.debug("Sensing medium")
                 self.logger.debug("Next event tick: " + str(self.next_event_tick))
