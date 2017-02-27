@@ -22,6 +22,9 @@ class Computer:
         self.fsm = self.csma_cd()
         self.t1_queue = Queue()
 
+        self.delays = []
+        self.current_delay = 0
+
     def generate_packet(self, arrival_tick):
         packet = {}
         packet['arrival_tick'] = arrival_tick
@@ -33,7 +36,9 @@ class Computer:
 
     def csma_cd(self):
         while(True):
-            prop_length = 30
+            self.current_delay = self.next_event_tick
+
+            prop_length = 3
             self.next_event_tick += 960
             self.logger.debug("Before sensing medium")
             self.logger.debug("Next event tick: " + str(self.next_event_tick))
@@ -59,6 +64,7 @@ class Computer:
                 self.logger.debug("Next event tick: " + str(self.next_event_tick))
                 if i == (prop_length / 3) - 1:
                     if self.hub.hub_packet_queue.qsize() > 0:
+                        self.logger.info("T1 - updating collision")
                         self.hub.update_collision()
                         local_collision = True
                         break
@@ -70,7 +76,7 @@ class Computer:
                     break
 
             if local_collision:
-                self.logger.debug("T1 collision")
+                self.logger.info("T1 collision")
                 self.collision_handler()
                 yield
                 continue
@@ -91,6 +97,13 @@ class Computer:
 
             if self.hub.has_collided:
                 self.hub.has_collided = False
+                self.logger.info("T2 collision - 2nd collider")
+                self.collision_handler()
+                yield
+                continue
+
+            if self.hub.hub_packet_queue.empty():
+                self.logger.info("T2 collision - 1st collider")
                 self.collision_handler()
                 yield
                 continue
@@ -125,16 +138,20 @@ class Computer:
 
             self.hub.complete_transmission()
             self.depart_packet = True
+            self.delays.append(self.next_event_tick - self.current_delay)
             self.i = 0
             yield
+
+    def calc_avg_delay(self):
+        return sum(self.delays)/len(self.delays)
 
     def collision_handler(self):
         while self.t1_queue.qsize() > 0:
             self.t1_queue.get()
 
+        self.logger.info("Current event tick: " + str(self.next_event_tick))
         self.next_event_tick += (480 + self.bin_exp_back(self.i))
         self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
-        self.logger.info("Next event tick: " + str(self.next_event_tick))
         self.i += 1
 
     def bin_exp_back(self, i):

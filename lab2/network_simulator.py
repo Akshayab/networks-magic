@@ -32,6 +32,25 @@ def simulate(sim_params, logger):
                 station.departure(tick, run_results)
 
 
+    logger.warn("N: " + str(sim_params.N))
+    logger.warn("A: " + str(sim_params.A))
+
+    i = 0
+    total = 0
+    length = 0
+    for station in stations:
+        i+=1
+        logger.warn("Station " + str(i) + ": Queue size " + str(station.packet_queue.qsize()))
+        total += sum(station.delays)
+        length += len(station.delays)
+
+    logger.debug("length: " + str(length))
+
+    logger.warn("Total Average Delay " + str(total/length))
+    logger.warn("Number of packets transmitted = " + str(hub.num_packets_trans))
+    logger.warn("\n\n\n\n")
+
+
 def main(parser):
     sim_params = parser.parse_args()
     sim_params.finite_queue = False
@@ -55,12 +74,18 @@ def main(parser):
         sh.setLevel(logging.DEBUG)
         logger.setLevel(logging.DEBUG)
     else:
-        sh.setLevel(logging.INFO)
-        logger.setLevel(logging.INFO)
+        sh.setLevel(logging.WARN)
+        logger.setLevel(logging.WARN)
 
     logger.debug(sim_params)
 
-    simulate(sim_params, logger)
+    for A in range(4, 18, 2):
+        sim_params.A = A
+        simulate(sim_params, logger)
+
+    for N in range(4, 18, 2):
+        sim_params.N = N
+        simulate(sim_params, logger)
 
     # create_report(average_queue_size, average_queue_delay, prop_idle_time, average_sojourn_time, packet_loss, rho)
     return 0

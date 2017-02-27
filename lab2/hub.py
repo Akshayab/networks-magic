@@ -10,6 +10,8 @@ class Hub:
         self.stations = []
         self.logger = logger
 
+        self.num_packets_trans = 0
+
     def update_collision(self):
         self.has_collided = True
         self.num_collisions += 1
@@ -40,6 +42,7 @@ class Hub:
 
     def complete_transmission(self):
         self.logger.debug("Completing transmission")
+        self.num_packets_trans += 1
         for station in self.stations:
             if not station.t1_queue.empty():
                 station.t1_queue.get()
