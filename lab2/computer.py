@@ -164,7 +164,7 @@ class Computer:
         self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
         self.i += 1
 
-    def bin_exp_back(self, ):
+    def bin_exp_back(self):
         if self.i > 10:
             self.i = 0
             self.logger.info("i is greater than 10")
