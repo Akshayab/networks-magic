@@ -29,7 +29,7 @@ def simulate(sim_params, logger):
                 station.fsm.next()
 
             if station.depart_packet:
-                station.departure(tick, run_results)
+                station.departure()
 
     logger.warn("N: " + str(sim_params.N))
     logger.warn("A: " + str(sim_params.A))

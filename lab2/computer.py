@@ -38,20 +38,18 @@ class Computer:
         while(True):
             self.current_delay = self.next_event_tick
 
-            prop_length = 9
+            prop_length = 3
             self.next_event_tick += 1
             self.logger.debug("Before sensing medium")
             self.logger.debug("Next event tick: " + str(self.next_event_tick))
             yield
 
-            j = 0
             self.logger.debug("medium busy = " + str(self.medium_busy()))
             while self.medium_busy():
-                #self.next_event_tick += self.bin_exp_back(j)
+                self.next_event_tick += self.bin_exp_back()
                 self.next_event_tick += 1
                 self.logger.debug("Sensing medium")
                 self.logger.debug("Next event tick: " + str(self.next_event_tick))
-                j += 1
                 self.logger.debug("medium busy = " + str(self.medium_busy()))
                 yield
 
@@ -115,7 +113,7 @@ class Computer:
                 yield
 
                 local_collision = False
-                for i in range((prop_length/3) - 1):
+                for i in range((prop_length/3) + self.calc_next_departure_time() - 1):
                     if not self.hub.check_last_stage_collision():
                         local_collision = True
                         break
@@ -150,15 +148,16 @@ class Computer:
             self.t1_queue.get()
 
         self.logger.info("Current event tick: " + str(self.next_event_tick))
-        self.next_event_tick += (480 + self.bin_exp_back(self.i))
+        self.next_event_tick += (480 + self.bin_exp_back())
         self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
         self.i += 1
 
-    def bin_exp_back(self, i):
-        if i > 10:
-            raise Exception("i is greater than 10")
+    def bin_exp_back(self, ):
+        if self.i > 10:
+            self.i = 0
+            self.logger.info("i is greater than 10")
 
-        R = random.randint(0, pow(2, i) - 1)
+        R = random.randint(0, pow(2, self.i) - 1)
         return R * 51
 
     def medium_busy(self):
@@ -169,7 +168,7 @@ class Computer:
         if self.packet_queue.qsize() == 0:
             self.next_event_tick = cur_tick
             self.logger.debug("Arrival: Next event tick = " + str(self.next_event_tick))
-            run_results.dep_tick = cur_tick + self.calc_next_departure_time(self.sim_params)
+            run_results.dep_tick = cur_tick + self.calc_next_departure_time()
 
         new_packet = self.generate_packet(cur_tick)
         self.packet_queue.put(new_packet)
@@ -178,26 +177,18 @@ class Computer:
         self.packet_generator()
 
     # Handles departure of the latest packet in the buffer
-    def departure(self, cur_tick, run_results):
+    def departure(self):
         self.depart_packet = False
-        # Calculate the packet queue size
-        run_results.queue_size += self.packet_queue.qsize()
-        run_results.num_looks += 1
 
         # Calculate queue delay
         self.packet_queue.get()
 
         self.logger.info("Packet departed.")
 
-        # Record tick if queue is empty and set the next departure time to be Inf (total ticks + 1)
-        if self.packet_queue.qsize() == 0:
-            run_results.dep_tick = self.sim_params.ticks + 1
-        else:
-            run_results.dep_tick = cur_tick + self.calc_next_departure_time(self.sim_params)
-
     # Time taken to process a packet
-    def calc_next_departure_time(self, sim_params):
-        return ceil((sim_params.packet_size / float(sim_params.transmission_rate)) * sim_params.tick_length)
+    def calc_next_departure_time(self):
+        return int(ceil((self.sim_params.packet_size / float(self.sim_params.transmission_rate)) *
+                        self.sim_params.tick_length))
 
     # Random generator used to calculate the tick when the next packet will be generated
     def calc_next_arrival_time(self, sim_params):
