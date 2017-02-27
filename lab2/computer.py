@@ -150,7 +150,7 @@ class Computer:
             self.t1_queue.get()
 
         self.logger.info("Current event tick: " + str(self.next_event_tick))
-        self.next_event_tick += (480 + self.bin_exp_back(self.i))
+        self.next_event_tick += (5 + self.bin_exp_back(self.i))
         self.logger.info("Number of collisions: " + str(self.hub.num_collisions))
         self.i += 1
 
