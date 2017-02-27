@@ -1,4 +1,12 @@
+#########################
+# Authors: Akshay Budhkar and Ashwin Raman
+# Submission for Lab 2 of ECE 358/
+# Simulates a Hub having a star topology while handling multiple computer stations.
+# Handles transmission through the physical layer while taking care of collisions at a higher level.
+#########################
+
 from Queue import Queue
+
 
 class Hub:
     def __init__(self, logger):

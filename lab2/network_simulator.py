@@ -1,3 +1,10 @@
+#########################
+# Authors: Akshay Budhkar and Ashwin Raman
+# Submission for Lab 2 of ECE 358/
+# Simulates a Network with a Hub having a star topology while handling multiple computer stations.
+# Measures performance of the network by varying network parameters.
+#########################
+
 import logging
 import argparse
 import sys
@@ -38,7 +45,7 @@ def simulate(sim_params, logger):
     total = 0
     length = 0
     for station in stations:
-        i+=1
+        i += 1
         logger.warn("Station " + str(i) + ": Queue size " + str(station.packet_queue.qsize()))
         total += sum(station.delays)
         length += len(station.delays)
@@ -87,16 +94,12 @@ def main(parser):
     for N in range(4, 18, 2):
         sim_params.N = N
         simulate(sim_params, logger)
-
-    # create_report(average_queue_size, average_queue_delay, prop_idle_time, average_sojourn_time, packet_loss, rho)
     return 0
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Simulates a network queue based on the given parameters.')
     parser.add_argument('-N', type=int, default=16)
     parser.add_argument('-A', type=int, default=16)
-    #parser.add_argument('--ticks', type=int, default=2000000)
-    #parser.add_argument('--num-runs', type=int, default=5)
     parser.add_argument('--debug', action="store_true")
 
     main(parser)
