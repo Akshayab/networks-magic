@@ -31,7 +31,6 @@ def simulate(sim_params, logger):
             if station.depart_packet:
                 station.departure(tick, run_results)
 
-
     logger.warn("N: " + str(sim_params.N))
     logger.warn("A: " + str(sim_params.A))
 
@@ -46,7 +45,9 @@ def simulate(sim_params, logger):
 
     logger.debug("length: " + str(length))
 
-    logger.warn("Total Average Delay " + str(total/length))
+    logger.warn("Total Delay " + str(total))
+    logger.warn("Total Length " + str(length))
+    logger.warn("Total Average Delay " + str(total * 1.0/length))
     logger.warn("Number of packets transmitted = " + str(hub.num_packets_trans))
     logger.warn("\n\n\n\n")
 

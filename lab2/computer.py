@@ -38,8 +38,8 @@ class Computer:
         while(True):
             self.current_delay = self.next_event_tick
 
-            prop_length = 3
-            self.next_event_tick += 960
+            prop_length = 9
+            self.next_event_tick += 1
             self.logger.debug("Before sensing medium")
             self.logger.debug("Next event tick: " + str(self.next_event_tick))
             yield
@@ -48,7 +48,7 @@ class Computer:
             self.logger.debug("medium busy = " + str(self.medium_busy()))
             while self.medium_busy():
                 #self.next_event_tick += self.bin_exp_back(j)
-                self.next_event_tick += 960
+                self.next_event_tick += 1
                 self.logger.debug("Sensing medium")
                 self.logger.debug("Next event tick: " + str(self.next_event_tick))
                 j += 1
@@ -159,7 +159,7 @@ class Computer:
             raise Exception("i is greater than 10")
 
         R = random.randint(0, pow(2, i) - 1)
-        return R * 5120
+        return R * 51
 
     def medium_busy(self):
         return self.hub.has_collided or (self.hub.hub_packet_queue.qsize() > 0) or (self.t1_queue.qsize() > 0)
